@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Add Sale</title>
+  <style>
+    body { font-family: Arial; padding: 20px; background: #f9f9f9; }
+    input, button {
+      display: block;
+      margin: 10px auto;
+      padding: 10px;
+      width: 90%;
+      max-width: 400px;
+    }
+    button {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+    a { display: block; text-align: center; margin-top: 20px; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <h2>➕ Add New Sale</h2>
+  <input type="date" id="date">
+  <input type="text" id="product" placeholder="Product Name">
+  <input type="number" id="amount" placeholder="Amount">
+  <input type="text" id="customer" placeholder="Customer Name">
+  <input type="text" id="phone" placeholder="Phone Number">
+  <button onclick="addSale()">Save Sale</button>
+  <a href="index.html">← Back to Home</a>
+
+  <script>
+    let sales = JSON.parse(localStorage.getItem('sales')) || [];
+
+    function addSale() {
+      const date = document.getElementById('date').value;
+      const product = document.getElementById('product').value;
+      const amount = document.getElementById('amount').value;
+      const customer = document.getElementById('customer').value;
+      const phone = document.getElementById('phone').value;
+
+      if (!date || !product || !amount) {
+        alert("Date, product and amount are required!");
+        return;
+      }
+
+      sales.push({ date, product, amount, customer, phone });
+      localStorage.setItem('sales', JSON.stringify(sales));
+      alert("Sale saved!");
+      document.querySelectorAll('input').forEach(i => i.value = '');
+    }
+  </script>
+</body>
+</html>

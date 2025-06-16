@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>View Sales</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: Arial; padding: 15px; background: #fff; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border: 1px solid #ccc; padding: 10px; font-size: 14px; text-align: center; }
+    input, select {
+      padding: 8px; margin: 5px 5px 10px 0; font-size: 14px;
+    }
+    #total { font-weight: bold; margin-top: 10px; }
+    canvas { margin-top: 20px; }
+    button.deleteBtn {
+      background: #e5393; color: white; border: none;
+      padding: 6px 10px; border-radius: 5px; cursor: pointer;
+    }
+    a { display: block; margin-top: 20px; text-decoration: none; }
+  </style>
+</head>
+<body>
+
+<h2>📈 View Sales</h2>
+
+<select id="filter" onchange="renderSales()"> 
+  <option value="all">All Time</option>
+  <option value="day">Today</option>
+  <option value="week">This Week</option>
+  <option value="month">This Month</option>
+</select>
+
+<input type="text" id="search" placeholder="Search by product..." oninput="renderSales()">
+
+<table>
+  <thead>
+    <tr>
+      <th>Date</th><th>Product</th><th>Amount</th>
+      <th>Customer</th><th>Phone</th><th>Delete</th>
+    </tr>
+  </thead>
+  <tbody id="salesList"></tbody>
+</table>
+
+<div id="total">Total Sales: ₹0</div>
+<canvas id="salesChart" height="180"></canvas>
+
+<a href="index.html">← Back to Home</a>
+
+<script>
+  let sales = JSON.parse(localStorage.getItem('sales')) || [];
+
+  function deleteSale(index) {
+    if (confirm("Delete this sale?")) {
+      sales.splice(index, 1);
+      localStorage.setItem('sales', JSON.stringify(sales));
+      renderSales();
+    }
+  }
+
+  function filterSales(list) {
+    const filter = document.getElementById('filter').value;
+    const search = document.getElementById('search').value.toLowerCase();
+    const now = new Date();
+
+    return list.map((sale, index) => ({ ...sale, index }))
+      .filter(sale => {
+        const saleDate = new Date(sale.date);
+        const matchDate = (
+          filter === 'day' ? saleDate.toDateString() === now.toDateString() :
+          filter === 'week' ? saleDate >= new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7) :
+          filter === 'month' ? (saleDate.getMonth() === now.getMonth() && saleDate.getFullYear() === now.getFullYear()) :
+          true
+        );
+        const matchSearch = sale.product.toLowerCase().includes(search);
+        return matchDate && matchSearch;
+      });
+  }
+
+  function renderSales() {
+    const list = document.getElementById('salesList');
+    const filtered = filterSales(sales);
+    list.innerHTML = '';
+    let total = 0;
+
+    filtered.forEach(sale => {
+      list.innerHTML += `
+        <tr>
+          <td>${sale.date}</td>
+          <td>${sale.product}</td>
+          <td>₹${sale.amount}</td>
+          <td>${sale.customer || ''}</td>
+          <td>${sale.phone || ''}</td>
+          <td><button class="deleteBtn" onclick="deleteSale(${sale.index})">×</td>
+        </tr>`;
+      total += Number(sale.amount);
+    });
+
+    document.getElementById('total').innerText = 'Total Sales: ₹' + total;
+    drawChart(filtered);
+  }
+
+  function drawChart(dataSet) {
+    const daily = {};
+    dataSet.forEach(sale => {
+      if (!daily[sale.date]) daily[sale.date] = 0;
+      daily[sale.date] += Number(sale.amount);
+    });
+
+    const labels = Object.keys(daily).sort();
+    const data = labels.map(date => daily[date]);
+
+    const ctx = document.getElementById('salesChart').getContext('2d');
+    if (window.salesChart) window.salesChart.destroy();
+
+    window.salesChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Sales (₹)',
+          data,
+          backgroundColor: '#4CAF50',
+          borderRadius: 5
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: { y: { beginAtZero: true } }
+      }
+    });
+  }
+
+  renderSales();
+</script>
+
+</body>
+</html>

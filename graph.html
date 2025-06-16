@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Sales Graph</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    canvas { margin-top: 30px; max-width: 100%; }
+    h2 { text-align: center; }
+    select {
+      display: block;
+      margin: 0 auto 20px;
+      font-size: 16px;
+      padding: 8px;
+    }
+    a { display: block; margin-top: 20px; text-align: center; }
+  </style>
+</head>
+<body>
+
+<h2>📊 Sales Overview</h2>
+
+<select id="filter" onchange="renderChart()">
+  <option value="all">All Time</option>
+  <option value="day">Today</option>
+  <option value="week">This Week</option>
+  <option value="month">This Month</option>
+</select>
+
+<canvas id="salesChart" height="200"></canvas>
+<a href="index.html">← Back to Home</a>
+
+<script>
+  let sales = JSON.parse(localStorage.getItem('sales') || '[]');
+
+  function filterSales() {
+    const filter = document.getElementById('filter').value;
+    const now = new Date();
+
+    return sales.filter(sale => {
+      const saleDate = new Date(sale.date);
+      if (filter === 'day') {
+        return saleDate.toDateString() === now.toDateString();
+      } else if (filter === 'week') {
+        const weekAgo = new Date(now);
+        weekAgo.setDate(now.getDate() - 7);
+        return saleDate >= weekAgo;
+      } else if (filter === 'month') {
+        return (
+          saleDate.getMonth() === now.getMonth() &&
+          saleDate.getFullYear() === now.getFullYear()
+        );
+      } else {
+        return true;
+      }
+    });
+  }
+
+  function renderChart() {
+    const filtered = filterSales();
+    const daily = {};
+
+    filtered.forEach(sale => {
+      if (!daily[sale.date]) daily[sale.date] = 0;
+      daily[sale.date] += Number(sale.amount);
+    });
+
+    const labels = Object.keys(daily).sort();
+    const data = labels.map(date => daily[date]);
+
+    const ctx = document.getElementById('salesChart').getContext('2d');
+    if (window.salesChart) window.salesChart.destroy();
+
+    window.salesChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Daily Sales (₹)',
+          data: data,
+          borderColor: '#1976D2',
+          backgroundColor: 'rgba(25, 118, 210, 0.2)',
+          fill: true,
+          tension: 0.3
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: {
+            beginAtZero: true
+          }
+        }
+      }
+    });
+  }
+
+  renderChart();
+</script>
+
+</body>
+</html>
